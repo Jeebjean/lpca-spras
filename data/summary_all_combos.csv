@@ -1,0 +1,13 @@
+Algorithm,Combinations,Matrix rows (edges),Matrix cols (runs),Best m
+PathLinker,5,103,5,20
+PathLinker,10,111,10,20
+PathLinker,25,266,25,20
+PathLinker,50,366,50,20
+OI1,5,958,5,17
+OI1,10,1035,10,7
+OI1,25,1120,25,6
+OI1,54,1238,54,6
+OI2,5,749,5,13
+OI2,10,777,10,14
+OI2,25,789,25,13
+OI2,50,775,50,13
