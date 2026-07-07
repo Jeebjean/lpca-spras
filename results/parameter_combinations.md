@@ -29,7 +29,7 @@
 ## Supplement Parameter Combinations (EGFR Dataset)
 
 Parameters from Table 15 of the SPRAS registered report supplement.
-Before running each combo level, all previous algorithm outputs were deleted and Snakemake was rerun from scratch.
+All three algorithms were run together in a single Snakemake execution with 3 runs each.
 
 ### PathLinker (17 runs total, 3 runs)
 | Run | k values |
