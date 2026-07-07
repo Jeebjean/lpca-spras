@@ -24,12 +24,16 @@ for algo, n_combos, path in dirs:
     if os.path.exists(cv_file) and os.path.exists(matrix_file):
         m = pd.read_csv(cv_file)['best_m'][0]
         matrix = pd.read_csv(matrix_file, index_col=0)
+        total_cells = matrix.shape[0] * matrix.shape[1]
+        n_zeros = (matrix == 0).sum().sum()
+        sparsity = round(n_zeros / total_cells * 100, 2)
         results.append({
             "Algorithm": algo,
             "Combinations": n_combos,
             "Matrix rows (edges)": matrix.shape[0],
             "Matrix cols (runs)": matrix.shape[1],
-            "Best m": m
+            "Best m": int(m),
+            "Sparsity (% zeros)": sparsity
         })
 
 df = pd.DataFrame(results)

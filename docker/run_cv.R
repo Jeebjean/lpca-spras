@@ -22,4 +22,15 @@ best_m = which.min(cv_result)
 cat("Cross-validation done for k =", k, "\n")
 cat("Best m:", best_m, "\n")
 
+# Save best m
 write.csv(data.frame(k = k, best_m = best_m), output_file, row.names = FALSE)
+
+# Save full CV curve (all m values and their reconstruction error)
+cv_curve_file = sub("\\.csv$", "_curve.csv", output_file)
+cv_df = data.frame(
+  m = 1:20,
+  reconstruction_error = as.numeric(cv_result),
+  is_best = (1:20) == best_m
+)
+write.csv(cv_df, cv_curve_file, row.names = FALSE)
+cat("CV curve saved to", cv_curve_file, "\n")
