@@ -1,29 +1,3 @@
-# # Read command line arguments
-# args = commandArgs(trailingOnly = TRUE)
-# input_file = args[1]
-# output_file = args[2]
-# k = as.integer(args[3])
-# m = as.numeric(args[4])
-
-# # Load data
-# library(logisticPCA)
-# data = read.csv(input_file, row.names = NULL)
-# party = data[, 1]
-# data = data[, -1]
-# data_matrix = as.matrix(data)
-# data_matrix[is.na(data_matrix)] = 0
-
-# # Run LPCA
-# model = logisticPCA(data_matrix, k = k, m = m)
-
-# # Save scores
-# scores = model$PCs
-# rownames(scores) = party
-# write.csv(scores, output_file, row.names = TRUE)
-
-# cat("LPCA done! Scores saved to", output_file, "\n")
-# cat("Score dimensions:", nrow(scores), "x", ncol(scores), "\n")
-
 # Read command line arguments
 args = commandArgs(trailingOnly = TRUE)
 input_file = args[1]

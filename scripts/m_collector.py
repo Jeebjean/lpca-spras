@@ -1,57 +1,59 @@
-import pandas as pd
-import os
+library(ggplot2)
+library(gridExtra)
+library(yaml)
 
-results = []
+ML_DIR = "/Users/mdegbelo/spras/output/egfr/tps_egfr-ml"
+LOG_DIR = "/Users/mdegbelo/spras/output/egfr/logs"
+algo = "rwr"
 
-dirs = [
-    ("PathLinker", 5,  "data/combo_tests/spras_output_egfr_pathlinker_5", "cv"),
-    ("PathLinker", 10, "data/combo_tests/spras_output_egfr_pathlinker_10", "cv"),
-    ("PathLinker", 25, "data/combo_tests/spras_output_egfr_pathlinker_25", "cv"),
-    ("PathLinker", 50, "data/combo_tests/spras_output_egfr_pathlinker_50", "cv"),
-    ("OI1", 5,  "data/combo_tests/spras_output_egfr_oi1_5", "cv"),
-    ("OI1", 10, "data/combo_tests/spras_output_egfr_oi1_10", "cv"),
-    ("OI1", 25, "data/combo_tests/spras_output_egfr_oi1_25", "cv"),
-    ("OI1", 54, "data/combo_tests/spras_output_egfr_oi1_54", "cv"),
-    ("OI2", 5,  "data/combo_tests/spras_output_egfr_oi2_5", "cv"),
-    ("OI2", 10, "data/combo_tests/spras_output_egfr_oi2_10", "cv"),
-    ("OI2", 25, "data/combo_tests/spras_output_egfr_oi2_25", "cv"),
-    ("OI2", 50, "data/combo_tests/spras_output_egfr_oi2_50", "cv"),
-    ("PathLinker", "supplement (17)", "data/supplement/spras_output_egfr_pathlinker_supplement", "cv"),
-    ("OI1", "supplement (18)", "data/supplement/spras_output_egfr_omicsintegrator1_supplement", "cv"),
-    ("OI2", "supplement (24)", "data/supplement/spras_output_egfr_omicsintegrator2_supplement", "cv"),
-]
+# Charger PCA classique
+pca = read.csv(file.path(ML_DIR, "rwr-pca-coordinates.txt"), header=TRUE, sep="\t")
+pca = pca[!pca$datapoint_labels %in% c("centroid", "kde_peak"), ]
+pca$hash = gsub("tps_egfr-rwr-params-", "", pca$datapoint_labels)
 
-for algo, n_combos, path, cv_subdir in dirs:
-    cv_file = os.path.join(path, cv_subdir, "cv_result.csv")
-    matrix_file = os.path.join(path, "binary_matrix.csv")
+# Charger LPCA transposé
+lpca = read.csv(file.path(ML_DIR, "rwr-lpca_scores_transposed.csv"), row.names=1)
+lpca$hash = gsub("tps_egfr-rwr-params-", "", rownames(lpca))
 
-    # Try lpca_binary_matrix.csv for supplement folders
-    if not os.path.exists(matrix_file):
-        matrix_file = os.path.join(path, "lpca_binary_matrix.csv")
+# Merger
+merged = merge(pca, lpca, by="hash")
+cat(sprintf("Matched runs: %d\n", nrow(merged)))
 
-    if not os.path.exists(cv_file) or not os.path.exists(matrix_file):
-        print(f"Skipping {algo} {n_combos}: missing files")
-        print(f"  cv_file: {cv_file} exists: {os.path.exists(cv_file)}")
-        print(f"  matrix_file: {matrix_file} exists: {os.path.exists(matrix_file)}")
-        continue
+# Charger paramètres pour coloration
+param_files = list.files(LOG_DIR,
+  pattern="parameters-rwr.*\\.yaml",
+  full.names=TRUE)
 
-    m = pd.read_csv(cv_file)['best_m'][0]
-    matrix = pd.read_csv(matrix_file, index_col=0)
-    total_cells = matrix.shape[0] * matrix.shape[1]
-    n_zeros = (matrix == 0).sum().sum()
-    sparsity = round(n_zeros / total_cells * 100, 2)
+params_list = lapply(param_files, function(f) {
+  params = yaml.load_file(f)
+  hash = gsub(".*parameters-rwr.*-(\\w+)\\.yaml", "\\1", basename(f))
+  numeric_params = params[sapply(params, is.numeric)]
+  if (length(numeric_params) > 0) {
+    data.frame(hash=hash, param_val=numeric_params[[1]],
+               param_name=names(numeric_params)[1])
+  }
+})
+params_df = do.call(rbind, params_list)
+merged2 = merge(merged, params_df, by="hash")
 
-    results.append({
-        "Algorithm": algo,
-        "Combinations": n_combos,
-        "Matrix rows (edges)": matrix.shape[0],
-        "Matrix cols (runs)": matrix.shape[1],
-        "Best m": int(m),
-        "Sparsity (% zeros)": sparsity
-    })
+# Plot PCA classique
+p1 = ggplot(merged2, aes(x=PC1, y=PC2, color=factor(round(param_val,3)))) +
+  geom_point(size=3, alpha=0.8) +
+  ggtitle("Standard PCA (SPRAS) - rwr") +
+  xlab("PC1") + ylab("PC2") +
+  theme_minimal() +
+  labs(color=unique(merged2$param_name))
 
-df = pd.DataFrame(results)
-print(df.to_string(index=False))
-df.to_csv("data/summary_all_combos.csv", index=False)
-df.to_csv("results/summary_all_combos.csv", index=False)
-print("\nSaved!")
+# Plot LPCA transposé
+p2 = ggplot(merged2, aes(x=V1, y=V2, color=factor(round(param_val,3)))) +
+  geom_point(size=3, alpha=0.8) +
+  ggtitle("LPCA transposed - rwr") +
+  xlab("PC1") + ylab("PC2") +
+  theme_minimal() +
+  labs(color=unique(merged2$param_name))
+
+combined = arrangeGrob(p1, p2, ncol=2,
+  top="Standard PCA vs LPCA transposed - rwr (14 runs)")
+
+ggsave("data/viz_pca_vs_lpca_rwr.png", combined, width=16, height=8)
+cat("Done!\n")

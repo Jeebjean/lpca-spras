@@ -170,12 +170,15 @@ if __name__ == "__main__":
 
     import glob
     algorithm_files = glob.glob(
-        "/Users/mdegbelo/spras/output/egfr/tps_egfr-pathlinker-params-*/pathway.txt"
+        "/Users/mdegbelo/spras/output/egfr/tps_egfr-ml/rwr-ensemble-pathway.txt"
     )
     print(f"Found {len(algorithm_files)} algorithm output files")
 
     run_full_pipeline(
         algorithm_output_files=algorithm_files,
-        output_dir="/Users/mdegbelo/lpca-docker/data/spras_output_egfr_pathlinker_5",
+        output_dir="/Users/mdegbelo/lpca-docker/data/rwr",
         k=2
     )
+
+
+    
